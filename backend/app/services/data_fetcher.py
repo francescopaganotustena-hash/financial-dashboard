@@ -123,7 +123,7 @@ async def fetch_prices_alpha_vantage(
     function = "TIME_SERIES_WEEKLY_ADJUSTED" if is_weekly else "TIME_SERIES_DAILY_ADJUSTED"
     outputsize = "compact" if period in ["1mo", "3mo"] else "full"
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=6.0) as client:
         url = "https://www.alphavantage.co/query"
         params = {
             "function": function,
@@ -192,7 +192,7 @@ async def fetch_prices_stooq(
     params = {"s": stooq_symbol, "i": "w" if interval == "1wk" else "d"}
     logger.info(f"Fetching {symbol} data from Stooq: period={period}, interval={interval}")
 
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=6.0) as client:
         response = await client.get(url, params=params)
         response.raise_for_status()
         text = response.text.strip()
@@ -234,17 +234,32 @@ async def fetch_prices(
     try:
         return await fetch_prices_yfinance(symbol, period, interval)
     except Exception as e:
-        logger.warning(f"yfinance failed for {symbol}: {e}, trying Alpha Vantage")
-        try:
-            return await fetch_prices_alpha_vantage(symbol, period, interval)
-        except Exception as e2:
-            logger.warning(f"Alpha Vantage failed for {symbol}: {e2}, trying Stooq")
+        # For plain US tickers, Stooq is often faster and avoids Alpha Vantage quotas.
+        is_plain_us_symbol = "." not in symbol
+        if is_plain_us_symbol:
+            logger.warning(f"yfinance failed for {symbol}: {e}, trying Stooq")
             try:
                 return await fetch_prices_stooq(symbol, period, interval)
-            except Exception as e3:
-                logger.error(f"Stooq also failed for {symbol}: {e3}")
-                detail = str(e3).strip() or repr(e3)
-                raise DataFetchError(f"Failed to fetch data for {symbol}: {detail}")
+            except Exception as e2:
+                logger.warning(f"Stooq failed for {symbol}: {e2}, trying Alpha Vantage")
+                try:
+                    return await fetch_prices_alpha_vantage(symbol, period, interval)
+                except Exception as e3:
+                    logger.error(f"Alpha Vantage also failed for {symbol}: {e3}")
+                    detail = str(e3).strip() or repr(e3)
+                    raise DataFetchError(f"Failed to fetch data for {symbol}: {detail}")
+        else:
+            logger.warning(f"yfinance failed for {symbol}: {e}, trying Alpha Vantage")
+            try:
+                return await fetch_prices_alpha_vantage(symbol, period, interval)
+            except Exception as e2:
+                logger.warning(f"Alpha Vantage failed for {symbol}: {e2}, trying Stooq")
+                try:
+                    return await fetch_prices_stooq(symbol, period, interval)
+                except Exception as e3:
+                    logger.error(f"Stooq also failed for {symbol}: {e3}")
+                    detail = str(e3).strip() or repr(e3)
+                    raise DataFetchError(f"Failed to fetch data for {symbol}: {detail}")
 
 
 async def fetch_multiple_prices(

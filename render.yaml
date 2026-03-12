@@ -18,7 +18,7 @@ services:
       - key: CACHE_TTL_DAILY
         value: "300"
       - key: YFINANCE_TIMEOUT_SEC
-        value: "12"
+        value: "6"
       - key: REDIS_URL
         value: ""
       - key: CORS_ORIGINS

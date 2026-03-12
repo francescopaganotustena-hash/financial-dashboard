@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     # Cache TTL
     cache_ttl_weekly: int = Field(default=3600)
     cache_ttl_daily: int = Field(default=300)
-    yfinance_timeout_sec: int = Field(default=12)
+    yfinance_timeout_sec: int = Field(default=6)
 
     # CORS
     cors_origins: List[str] = Field(default=[
