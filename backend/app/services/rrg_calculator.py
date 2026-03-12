@@ -7,7 +7,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 
-from app.services.data_fetcher import fetch_prices, get_symbol_name
+from app.services.data_fetcher import fetch_prices, get_symbol_name, DataFetchError
 
 logger = logging.getLogger(__name__)
 
@@ -146,14 +146,14 @@ async def calculate_rrg_for_symbols(
             ).dropna(how="all")
             synthetic = close_frame.mean(axis=1, skipna=True).dropna()
             if synthetic.empty:
-                raise ValueError(f"Failed to build synthetic benchmark for {benchmark}")
+                raise DataFetchError(f"Failed to build synthetic benchmark for {benchmark}")
             benchmark_close = synthetic
             benchmark_used = "EQUAL_WEIGHT"
             logger.warning(
                 f"Using synthetic benchmark '{benchmark_used}' because '{benchmark}' was unavailable"
             )
         else:
-            raise ValueError(
+            raise DataFetchError(
                 f"Failed to fetch benchmark '{benchmark}' and insufficient symbols for fallback"
             )
 
