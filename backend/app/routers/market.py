@@ -8,6 +8,8 @@ import logging
 import yfinance as yf
 from fastapi import APIRouter, HTTPException, Query
 
+from app.core.config import settings
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/markets", tags=["markets"])
@@ -193,7 +195,13 @@ async def _fetch_symbol_snapshot(symbol: str) -> dict[str, Any] | None:
         }
 
     try:
-        return await asyncio.to_thread(_fetch)
+        return await asyncio.wait_for(
+            asyncio.to_thread(_fetch),
+            timeout=settings.yfinance_timeout_sec,
+        )
+    except asyncio.TimeoutError:
+        logger.warning(f"Snapshot timeout for {symbol}")
+        return None
     except Exception as e:
         logger.warning(f"Failed snapshot for {symbol}: {e}")
         return None

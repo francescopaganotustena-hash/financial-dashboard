@@ -87,7 +87,13 @@ async def fetch_prices_yfinance(
         df = ticker.history(period=period, interval=interval, auto_adjust=True)
         return df
 
-    df = await asyncio.to_thread(_fetch)
+    try:
+        df = await asyncio.wait_for(
+            asyncio.to_thread(_fetch),
+            timeout=settings.yfinance_timeout_sec,
+        )
+    except asyncio.TimeoutError as e:
+        raise DataFetchError(f"yfinance timeout for {symbol}") from e
 
     if df.empty:
         raise SymbolNotFoundError(f"Symbol {symbol} not found")
@@ -367,7 +373,13 @@ async def fetch_stock_overview(symbol: str) -> Dict[str, Any]:
             "fast_info": fast_info if isinstance(fast_info, dict) else {},
         }
 
-    payload = await asyncio.to_thread(_fetch)
+    try:
+        payload = await asyncio.wait_for(
+            asyncio.to_thread(_fetch),
+            timeout=settings.yfinance_timeout_sec,
+        )
+    except asyncio.TimeoutError as e:
+        raise DataFetchError(f"yfinance overview timeout for {symbol}") from e
     info = payload.get("info", {})
     fast_info = payload.get("fast_info", {})
 
