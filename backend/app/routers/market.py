@@ -11,6 +11,7 @@ from fastapi import APIRouter, HTTPException, Query
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/markets", tags=["markets"])
+_YF_CONCURRENCY_LIMIT = 4
 
 
 MARKET_CATALOG: dict[str, dict[str, Any]] = {
@@ -237,8 +238,14 @@ async def get_market_watch(
     index_data = market_data["indices"][index_key]
     pairs: list[tuple[str, str]] = index_data["symbols"]
 
+    semaphore = asyncio.Semaphore(_YF_CONCURRENCY_LIMIT)
+
+    async def _limited_snapshot(symbol: str) -> dict[str, Any] | None:
+        async with semaphore:
+            return await _fetch_symbol_snapshot(symbol)
+
     snapshots = await asyncio.gather(
-        *[_fetch_symbol_snapshot(symbol) for symbol, _ in pairs],
+        *[_limited_snapshot(symbol) for symbol, _ in pairs],
         return_exceptions=False,
     )
 

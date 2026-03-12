@@ -1,9 +1,9 @@
-"""Market data fetching service with yfinance and Alpha Vantage fallback."""
+"""Market data fetching service with yfinance and resilient fallbacks."""
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, Tuple
+from typing import Dict, Any
+from io import StringIO
 
 import yfinance as yf
 import pandas as pd
@@ -113,38 +113,53 @@ async def fetch_prices_alpha_vantage(
 
     logger.info(f"Fetching {symbol} data from Alpha Vantage: period={period}, interval={interval}")
 
-    # Map period to Alpha Vantage parameters
+    is_weekly = interval == "1wk"
+    function = "TIME_SERIES_WEEKLY_ADJUSTED" if is_weekly else "TIME_SERIES_DAILY_ADJUSTED"
     outputsize = "compact" if period in ["1mo", "3mo"] else "full"
 
     async with httpx.AsyncClient() as client:
         url = "https://www.alphavantage.co/query"
         params = {
-            "function": "TIME_SERIES_DAILY_ADJUSTED",
+            "function": function,
             "symbol": symbol,
-            "outputsize": outputsize,
             "apikey": settings.alpha_vantage_key,
         }
+        # outputsize is only meaningful for daily adjusted
+        if not is_weekly:
+            params["outputsize"] = outputsize
 
         response = await client.get(url, params=params)
         data = response.json()
 
-        if "Error Message" in data or "Note" in data:
+        if "Error Message" in data or "Note" in data or "Information" in data:
             raise DataFetchError(f"Alpha Vantage error: {data}")
 
-        time_series = data.get("Time Series (Daily)", {})
+        # API key names vary by function.
+        time_series = (
+            data.get("Weekly Adjusted Time Series")
+            or data.get("Time Series (Daily)")
+            or data.get("Weekly Time Series")
+            or {}
+        )
         if not time_series:
             raise DataFetchError(f"No data returned for {symbol}")
 
         # Convert to DataFrame
         records = []
         for date_str, values in time_series.items():
+            adj_close = values.get("5. adjusted close") or values.get("4. close")
+            volume = values.get("6. volume") or values.get("5. volume") or 0
+            open_val = values.get("1. open") or adj_close
+            high_val = values.get("2. high") or adj_close
+            low_val = values.get("3. low") or adj_close
+            close_val = values.get("4. close") or adj_close
             records.append({
                 "Date": pd.to_datetime(date_str),
-                "Open": float(values["5. adjusted close"]),  # Using adjusted close as proxy
-                "High": float(values["5. adjusted close"]),
-                "Low": float(values["5. adjusted close"]),
-                "Close": float(values["5. adjusted close"]),
-                "Volume": int(values["6. volume"]),
+                "Open": float(open_val),
+                "High": float(high_val),
+                "Low": float(low_val),
+                "Close": float(adj_close or close_val),
+                "Volume": int(float(volume)),
             })
 
         df = pd.DataFrame(records)
@@ -154,6 +169,50 @@ async def fetch_prices_alpha_vantage(
         _validate_data(df)
 
         return df
+
+
+async def fetch_prices_stooq(
+    symbol: str,
+    period: str = "1y",
+    interval: str = "1d"
+) -> pd.DataFrame:
+    """Second fallback for common US symbols via stooq CSV endpoint."""
+    # Stooq fallback is mainly for plain US tickers used in RRG benchmarks.
+    if "." in symbol:
+        raise DataFetchError("Stooq fallback supports plain US symbols only")
+
+    stooq_symbol = f"{symbol.lower()}.us"
+    url = "https://stooq.com/q/d/l/"
+    params = {"s": stooq_symbol, "i": "w" if interval == "1wk" else "d"}
+    logger.info(f"Fetching {symbol} data from Stooq: period={period}, interval={interval}")
+
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        response = await client.get(url, params=params)
+        response.raise_for_status()
+        text = response.text.strip()
+
+    if not text or text.lower().startswith("no_data"):
+        raise DataFetchError(f"Stooq returned no data for {symbol}")
+
+    df = pd.read_csv(StringIO(text))
+    if df.empty or "Date" not in df.columns:
+        raise DataFetchError(f"Invalid Stooq payload for {symbol}")
+
+    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    df = df.dropna(subset=["Date"]).set_index("Date").sort_index()
+
+    required = ["Open", "High", "Low", "Close", "Volume"]
+    for col in required:
+        if col not in df.columns:
+            raise DataFetchError(f"Missing column '{col}' in Stooq payload for {symbol}")
+        df[col] = pd.to_numeric(df[col], errors="coerce")
+
+    df = df.dropna(subset=["Close"])
+    if df.empty:
+        raise DataFetchError(f"Stooq returned empty close series for {symbol}")
+
+    _validate_data(df)
+    return df
 
 
 async def fetch_prices(
@@ -173,8 +232,12 @@ async def fetch_prices(
         try:
             return await fetch_prices_alpha_vantage(symbol, period, interval)
         except Exception as e2:
-            logger.error(f"Alpha Vantage also failed for {symbol}: {e2}")
-            raise DataFetchError(f"Failed to fetch data for {symbol}: {e2}")
+            logger.warning(f"Alpha Vantage failed for {symbol}: {e2}, trying Stooq")
+            try:
+                return await fetch_prices_stooq(symbol, period, interval)
+            except Exception as e3:
+                logger.error(f"Stooq also failed for {symbol}: {e3}")
+                raise DataFetchError(f"Failed to fetch data for {symbol}: {e3}")
 
 
 async def fetch_multiple_prices(

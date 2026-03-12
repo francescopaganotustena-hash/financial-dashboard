@@ -18,11 +18,18 @@ router = APIRouter(prefix="/api", tags=["rrg"])
 
 # Redis client (lazy init)
 _redis_client: Optional[redis.Redis] = None
+_redis_disabled: bool = False
 
 
-async def get_redis() -> redis.Redis:
+async def get_redis() -> Optional[redis.Redis]:
     """Get Redis client instance."""
-    global _redis_client
+    global _redis_client, _redis_disabled
+    if _redis_disabled:
+        return None
+    if not settings.redis_url:
+        _redis_disabled = True
+        logger.info("Redis disabled: REDIS_URL is empty")
+        return None
     if _redis_client is None:
         try:
             _redis_client = redis.from_url(
@@ -32,6 +39,7 @@ async def get_redis() -> redis.Redis:
             )
         except Exception as e:
             logger.warning(f"Failed to connect to Redis: {e}")
+            _redis_disabled = True
             _redis_client = None
     return _redis_client
 

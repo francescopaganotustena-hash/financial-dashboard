@@ -18,7 +18,7 @@ services:
       - key: CACHE_TTL_DAILY
         value: "300"
       - key: REDIS_URL
-        value: redis://localhost:6379
+        value: ""
       - key: CORS_ORIGINS
         value: '["https://your-frontend.vercel.app"]'
       - key: CORS_ORIGIN_REGEX
