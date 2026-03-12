@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+set -u
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$ROOT_DIR/backend"
+FRONTEND_DIR="$ROOT_DIR/frontend"
+LOG_DIR="$ROOT_DIR/logs"
+
+DEFAULT_BACKEND_PORT=8011
+DEFAULT_FRONTEND_PORT=3011
+
+BACKEND_PORT="${BACKEND_PORT:-$DEFAULT_BACKEND_PORT}"
+FRONTEND_PORT="${FRONTEND_PORT:-$DEFAULT_FRONTEND_PORT}"
+LAN_IP="${LAN_IP:-}"
+
+BACKEND_LOG="$LOG_DIR/backend_${BACKEND_PORT}.log"
+FRONTEND_LOG="$LOG_DIR/frontend_${FRONTEND_PORT}.log"
+BACKEND_PID_FILE="$LOG_DIR/backend_${BACKEND_PORT}.pid"
+FRONTEND_PID_FILE="$LOG_DIR/frontend_${FRONTEND_PORT}.pid"
+
+mkdir -p "$LOG_DIR"
+
+detect_lan_ip() {
+  if [[ -n "$LAN_IP" ]]; then
+    echo "$LAN_IP"
+    return
+  fi
+
+  local ip
+  ip="$(hostname -I 2>/dev/null | tr ' ' '\n' | awk '/^10\.0\.0\./ {print; exit}')"
+  if [[ -z "$ip" ]]; then
+    ip="127.0.0.1"
+  fi
+  echo "$ip"
+}
+
+is_listening() {
+  local port="$1"
+  ss -ltn 2>/dev/null | awk '{print $4}' | grep -q ":${port}$"
+}
+
+is_pid_running() {
+  local pid="$1"
+  [[ -n "${pid:-}" ]] || return 1
+  kill -0 "$pid" 2>/dev/null
+}
+
+wait_for_port() {
+  local port="$1"
+  local retries="${2:-30}"
+  local delay="${3:-1}"
+
+  local i
+  for ((i = 1; i <= retries; i++)); do
+    if is_listening "$port"; then
+      return 0
+    fi
+    sleep "$delay"
+  done
+  return 1
+}
+
+sanitize_ports() {
+  if ! [[ "$BACKEND_PORT" =~ ^[0-9]+$ ]] || ! [[ "$FRONTEND_PORT" =~ ^[0-9]+$ ]]; then
+    echo "Porte non valide (backend=$BACKEND_PORT frontend=$FRONTEND_PORT). Uso i default ${DEFAULT_BACKEND_PORT}/${DEFAULT_FRONTEND_PORT}."
+    BACKEND_PORT="$DEFAULT_BACKEND_PORT"
+    FRONTEND_PORT="$DEFAULT_FRONTEND_PORT"
+  fi
+
+  if [[ "$BACKEND_PORT" == "$FRONTEND_PORT" ]]; then
+    echo "Conflitto porte (backend e frontend su $BACKEND_PORT). Ripristino default ${DEFAULT_BACKEND_PORT}/${DEFAULT_FRONTEND_PORT}."
+    BACKEND_PORT="$DEFAULT_BACKEND_PORT"
+    FRONTEND_PORT="$DEFAULT_FRONTEND_PORT"
+  fi
+
+  BACKEND_LOG="$LOG_DIR/backend_${BACKEND_PORT}.log"
+  FRONTEND_LOG="$LOG_DIR/frontend_${FRONTEND_PORT}.log"
+  BACKEND_PID_FILE="$LOG_DIR/backend_${BACKEND_PORT}.pid"
+  FRONTEND_PID_FILE="$LOG_DIR/frontend_${FRONTEND_PORT}.pid"
+}
+
+start_backend() {
+  if is_listening "$BACKEND_PORT"; then
+    echo "Backend gia attivo sulla porta $BACKEND_PORT"
+    return
+  fi
+
+  (
+    cd "$BACKEND_DIR" || exit 1
+    setsid -f python3 -m uvicorn app.main:app --host 0.0.0.0 --port "$BACKEND_PORT" \
+      > "$BACKEND_LOG" 2>&1 < /dev/null
+  )
+
+  if wait_for_port "$BACKEND_PORT" 25 1; then
+    echo "Backend avviato su :$BACKEND_PORT"
+  else
+    echo "Errore avvio backend. Controlla: $BACKEND_LOG"
+    [[ -s "$BACKEND_LOG" ]] && tail -n 20 "$BACKEND_LOG"
+  fi
+}
+
+start_frontend() {
+  if is_listening "$FRONTEND_PORT"; then
+    echo "Frontend gia attivo sulla porta $FRONTEND_PORT"
+    return
+  fi
+
+  local api_url
+  api_url="http://$(detect_lan_ip):$BACKEND_PORT"
+
+  (
+    cd "$FRONTEND_DIR" || exit 1
+    setsid -f env VITE_API_URL="$api_url" npm run dev -- --host 0.0.0.0 --port "$FRONTEND_PORT" \
+      > "$FRONTEND_LOG" 2>&1 < /dev/null
+  )
+
+  if wait_for_port "$FRONTEND_PORT" 40 1; then
+    echo "Frontend avviato su :$FRONTEND_PORT (VITE_API_URL=$api_url)"
+  else
+    echo "Errore avvio frontend. Controlla: $FRONTEND_LOG"
+    [[ -s "$FRONTEND_LOG" ]] && tail -n 20 "$FRONTEND_LOG"
+  fi
+}
+
+main() {
+  local host_ip
+  sanitize_ports
+  host_ip="$(detect_lan_ip)"
+
+  echo "Script: $ROOT_DIR/start"
+  echo "Avvio servizi progetto..."
+  echo "Porte: backend=$BACKEND_PORT frontend=$FRONTEND_PORT"
+  start_backend
+  start_frontend
+  echo ""
+  echo "URL applicazione: http://${host_ip}:${FRONTEND_PORT}"
+  echo "API backend:      http://${host_ip}:${BACKEND_PORT}"
+  echo "Log backend:      $BACKEND_LOG"
+  echo "Log frontend:     $FRONTEND_LOG"
+}
+
+main "$@"

@@ -1,0 +1,91 @@
+/* WebSocket Status Styles */
+
+.ws-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.ws-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ws-status--connected {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.ws-status--connected .ws-status-dot {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.ws-status--connecting {
+  background: rgba(234, 179, 8, 0.1);
+  color: #eab308;
+}
+
+.ws-status--connecting .ws-status-dot {
+  background: #eab308;
+  animation: pulse 1.5s infinite;
+}
+
+.ws-status--disconnected {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.ws-status--disconnected .ws-status-dot {
+  background: #6b7280;
+}
+
+.ws-status--paused {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+
+.ws-status--paused .ws-status-dot {
+  background: #94a3b8;
+}
+
+.ws-status--error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.ws-status--error .ws-status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+}
+
+.ws-reconnect-btn {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 0.25rem;
+}
+
+.ws-reconnect-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

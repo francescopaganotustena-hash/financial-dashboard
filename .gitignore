@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.venv/
+venv/
+
+# Node
+node_modules/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Logs / runtime
+logs/*.log
+logs/*.pid
+logs/backend_manual.log
+*.log
+
+# Build artifacts
+frontend/dist/
+backend/.pytest_cache/
+coverage/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
