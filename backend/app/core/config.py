@@ -42,7 +42,6 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3003",
         "http://127.0.0.1:3011",
         "http://10.0.0.103:3011",
-        "https://financial-dashboard-beta-lime.vercel.app",
     ])
     cors_origin_regex: str = Field(default="")
 

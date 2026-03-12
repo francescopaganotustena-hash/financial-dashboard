@@ -188,7 +188,7 @@ salim/
 - **AI Insight Panel** per commentary automatico
 - **Docker Compose** production-ready
 - **Nginx** reverse proxy con SSL support
-- **Deploy guide** completa per VPS e Vercel
+- **Deploy guide** completa per VPS/self-hosted
 
 ## RRG Quadrants
 

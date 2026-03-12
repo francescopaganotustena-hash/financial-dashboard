@@ -8,7 +8,7 @@ environment configuration, and deployment strategy.
 
 ## Final Goal (keep this in mind)
 The app must be runnable with a single command locally AND deployable to production
-on a VPS (Hetzner/DigitalOcean) with the frontend on Vercel.
+on a VPS (Hetzner/DigitalOcean) with a self-hosted frontend.
 
 ---
 
@@ -108,7 +108,7 @@ Create a single script that:
 ---
 
 ## Production Deploy Instructions (README section)
-- Frontend → Vercel (connect GitHub repo, set VITE_API_URL to VPS IP)
+- Frontend → static build served by Nginx on VPS
 - Backend → VPS with docker-compose.prod.yml
 - Domain → configure DNS A record to VPS IP
 - SSL → add Certbot/Let's Encrypt container to prod compose

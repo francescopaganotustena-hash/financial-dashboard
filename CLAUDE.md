@@ -14,7 +14,7 @@ A powerful interactive web app that:
 - Displays financial charts (OHLCV candlestick) for selected assets
 - Shows live financial news filtered by sector/ticker
 - Includes a sector screener, a historical playback animation, and an AI Insight Panel
-- Is fully containerized with Docker and deployable on VPS/Vercel
+- Is fully containerized with Docker and deployable on VPS/self-hosted environments
 
 ---
 
@@ -48,7 +48,7 @@ A powerful interactive web app that:
 - **Phase 1:** Backend foundation (FastAPI + RRG Calculator + Redis + Docker)
 - **Phase 2:** Frontend core (React + RRG animated chart with D3.js)
 - **Phase 3:** Advanced dashboard (TradingView charts + News panel + Screener)
-- **Phase 4:** Polish + Deploy (WebSocket, AI Insight Panel, VPS/Vercel deploy)
+- **Phase 4:** Polish + Deploy (WebSocket, AI Insight Panel, VPS/self-hosted deploy)
 
 ---
 

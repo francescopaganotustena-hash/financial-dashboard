@@ -35,7 +35,7 @@
 - [x] WebSocket for real-time updates
 - [x] AI Insight Panel (LLM integration)
 - [x] Production Docker Compose + Nginx
-- [x] Frontend deploy to Vercel
+- [x] Frontend deploy (static hosting)
 - [x] Backend deploy to VPS
 - [x] SSL setup
 - [x] QA Phase 4 validation ← Agent 5 ✅
