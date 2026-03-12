@@ -45,7 +45,9 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3011",
         "http://10.0.0.103:3011",
     ])
-    cors_origin_regex: str = Field(default="")
+    cors_origin_regex: str = Field(
+        default=r"^https?://10\.0\.0\.\d{1,3}(:\d+)?$"
+    )
 
 
 settings = Settings()

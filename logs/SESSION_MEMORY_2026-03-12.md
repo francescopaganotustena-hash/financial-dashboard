@@ -85,3 +85,12 @@ Alla prossima sessione ripartire da deploy stabile VPS/self-hosted, evitando dip
 ### Stato finale
 - Backend e frontend funzionanti in locale.
 - Build frontend e compile backend eseguite con esito positivo.
+
+### Aggiornamento finale LAN 10.0.0.0/24
+- Esteso supporto CORS backend a tutta la subnet `10.0.0.0/24` tramite `cors_origin_regex`.
+- Abilitato Vite `host: 0.0.0.0` per accesso frontend anche da client LAN.
+- Implementata logica LAN-aware nel frontend API config: se `VITE_API_URL` punta a `localhost` ma l'app e aperta da `10.0.0.x`, l'host API viene riallineato automaticamente all'host LAN corrente.
+- Verifica completata con preflight CORS da origin LAN e health endpoint backend su `8011`.
+- Servizi lasciati attivi:
+  - Backend: `0.0.0.0:8011`
+  - Frontend dev: `0.0.0.0:5173`
