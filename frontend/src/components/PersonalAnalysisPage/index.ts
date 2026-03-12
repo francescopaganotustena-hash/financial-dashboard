@@ -1,0 +1,1 @@
+export { PersonalAnalysisPage } from './PersonalAnalysisPage'

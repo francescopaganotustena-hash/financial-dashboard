@@ -11,7 +11,15 @@ import { useState, useRef, useEffect } from 'react'
 import { WebSocketStatus } from '../WebSocketStatus'
 import { useWebSocket } from '../../hooks/useWebSocket'
 
-export function Header() {
+export type AppView = 'dashboard' | 'personal-analysis'
+
+interface HeaderProps {
+  activeView: AppView
+  onViewChange: (view: AppView) => void
+  personalAnalysisEnabled?: boolean
+}
+
+export function Header({ activeView, onViewChange, personalAnalysisEnabled = true }: HeaderProps) {
   const {
     benchmark,
     setBenchmark,
@@ -63,9 +71,36 @@ export function Header() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <LayoutDashboard className="w-6 h-6 text-blue-500" />
-          <h1 className="text-white text-xl font-bold">RRG Charts</h1>
+          <h1 className="text-white text-xl font-bold">
+            {activeView === 'dashboard' ? 'RRG Charts' : 'Analisi Personale'}
+          </h1>
+          <div className="flex items-center gap-2 ml-2">
+            <button
+              className={`px-3 py-1.5 text-sm rounded border transition-colors ${
+                activeView === 'dashboard'
+                  ? 'bg-blue-600 text-white border-blue-500'
+                  : 'bg-background text-gray-300 border-border hover:text-white'
+              }`}
+              onClick={() => onViewChange('dashboard')}
+            >
+              Dashboard
+            </button>
+            {personalAnalysisEnabled && (
+              <button
+                className={`px-3 py-1.5 text-sm rounded border transition-colors ${
+                  activeView === 'personal-analysis'
+                    ? 'bg-blue-600 text-white border-blue-500'
+                    : 'bg-background text-gray-300 border-border hover:text-white'
+                }`}
+                onClick={() => onViewChange('personal-analysis')}
+              >
+                Analisi Interna
+              </button>
+            )}
+          </div>
         </div>
 
+        {activeView === 'dashboard' ? (
         <div className="flex items-center gap-4">
           <WebSocketStatus
             isConnected={isConnected}
@@ -145,8 +180,14 @@ export function Header() {
             {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
           </button>
         </div>
+        ) : (
+        <div className="text-xs text-gray-400 max-w-[460px] text-right">
+          Modulo interno di supporto decisionale, simulazione e confronto scenari.
+        </div>
+        )}
       </div>
 
+      {activeView === 'dashboard' && (
       <div className="flex items-center gap-2 mt-3">
         <span className="text-gray-400 text-sm">Sectors:</span>
         <div className="relative" ref={sectorMenuRef}>
@@ -176,6 +217,7 @@ export function Header() {
           )}
         </div>
       </div>
+      )}
     </motion.header>
   )
 }

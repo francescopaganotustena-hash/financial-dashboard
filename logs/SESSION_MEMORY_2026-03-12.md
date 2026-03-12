@@ -1,93 +1,87 @@
-# Session Memory - 2026-03-12
+# Session Memory - 2026-03-12 (Aggiornata)
 
-## 1) Obiettivo della giornata
-Arricchire la piattaforma oltre lo screener settoriale, abilitando ricerca titoli reali (es. AAPL, Stellantis), nuove aree informative per titolo, strumenti di controllo grafico RRG e una sezione market watch in stile watchlist globale.
+## Stato finale sessione
+Sessione sospesa su richiesta utente dopo salvataggio completo.
 
-## 2) Funzionalita implementate/estese
+## Obiettivi coperti oggi
+- Estensione ricerca titoli reali (non solo settori/ETF).
+- Aree aggiuntive per informazioni titolo e andamento grafico.
+- Migliorie controlli grafico RRG (selettore verticale/scala/zoom, posizionamento UI).
+- Nuova sezione watchlist mercati in fondo pagina con tab funzionali.
+- Correzioni backend e validazioni API su ticker reali (incluso Stellantis).
+- Setup Git completo, commit multipli e push su `main`.
 
-### 2.1 Ricerca titoli (non solo settori)
-- Estesa la ricerca per supportare ticker azionari reali e non solo ETF/settori.
-- Introdotta ricerca intelligente (matching su simbolo, nome, exchange) per gestire casi tipo `Stellantis`.
-- Verificato che `AAPL` venga risolto e che `Stellantis` restituisca risultati coerenti (es. `STLA`, `STLAM.MI`).
+## Attività Git principali concluse
+- Inizializzazione repo locale in `/home/sviluppatore/Documenti/salim`.
+- Configurazione SSH key deploy e autenticazione GitHub.
+- Push iniziale del progetto e successivi aggiornamenti incrementali.
 
-### 2.2 Dati e pannelli informativi sul titolo
-- Aggiunta area dedicata alle informazioni del titolo cercato (profilo/sintesi dati principali).
-- Aggiunta area trend/andamento con visualizzazione grafica del titolo selezionato.
-- Integrata logica frontend-backend per aggiornamento dinamico in base al simbolo attivo.
+Commit rilevanti (ordine cronologico recente):
+- `b4e21d9` feat: primo push progetto completo
+- `5169388` chore: setup deploy vercel+render + CORS prod
+- `1a802f3` fix: aggiunto dominio vercel beta nei CORS default
+- `069ec07` fix: fallback dati più robusti + redis disabilitato su render
+- `9488b7b` fix: ripristino import `Tuple` in `data_fetcher`
+- `48d772d` fix: fallback benchmark RRG per ridurre 503
+- `b4221e9` chore: trigger redeploy render
+- `114c983` fix: timeout yfinance per evitare blocchi richieste
+- `f4b2c66` perf: fallback Stooq prioritario per ticker US
+- `bc14ff1` fix: errori benchmark gestiti come data-fetch (no 500 interno)
+- `f3e69b7` chore: rimozione integrazione Render/Vercel e docs self-hosted
 
-### 2.3 Filtri e UI ricerca
-- Revisione UX dei campi di ricerca/filtri.
-- Chiarita e riorganizzata la sezione filtri avanzati.
-- Rinominata sezione secondo richiesta utente: **Filtri RRG Tabella**.
+## Diagnosi e decisioni importanti
+- Deploy `Render + Vercel` giudicato non affidabile per questo progetto (provider data/rate-limit/instabilita runtime percepita).
+- Decisione utente: sganciare i servizi cloud da Git e interrompere questa strada.
+- Eseguita pulizia repository da riferimenti Render/Vercel nei file attivi.
 
-### 2.4 Controlli grafico RRG (scala/zoom)
-- Inserito selettore verticale lato destro per modificare la scala del grafico in tempo reale.
-- Sistemata grafica del selettore (ordine elementi, sovrapposizioni testo, spacing).
-- Riposizionato il selettore vicino al grafico secondo area indicata in screenshot.
-- Aggiunto controllo zoom/scala con feedback immediato sulla visualizzazione.
+## Pulizia Render/Vercel eseguita
+- File eliminati:
+  - `render.yaml`
+  - `frontend/vercel.json`
+- Riferimenti rimossi/aggiornati in:
+  - `backend/app/core/config.py` (tolto dominio vercel nei CORS default)
+  - `backend/.env.example` (esempi CORS resi generici)
+  - `DEPLOY.md` (riscritto in ottica VPS/self-hosted)
+  - `README.md`, `TODO.md`, `CLAUDE.md`, `prompts/agent4_devops.md`
 
-### 2.5 Sezione watchlist mercati mondiali (in fondo pagina)
-- Creata nuova area interattiva tipo tabella mercati (stile Investing-like) con:
-  - selezione paese/mercato,
-  - selezione indice/lista,
-  - tab multipli: `Prezzo`, `Prestazione`, `Sezione tecnica`, `Fondamentale`, `Grafici`.
-- Implementata logica tab con contenuti realmente differenziati (non pulsanti decorativi).
-- Aggiunti campi backend utili alla tabella: `prev_close`, `avg_volume_20d`, `sparkline`.
-- Integrata visualizzazione sparkline nella tab `Grafici`.
+## Stato tecnico corrente
+- Branch attivo: `main`
+- Stato git: sincronizzato con `origin/main`
+- Ultimo commit: `f3e69b7`
+- Strategia deploy corrente: self-hosted (VPS + Docker Compose + Nginx)
 
-## 3) Backend/API: stato e correzioni
+## Nota per ripartenza
+Alla prossima sessione ripartire da deploy stabile VPS/self-hosted, evitando dipendenze Render/Vercel.
 
-### 3.1 Endpoint principali presenti
-- `/api/symbol-search`
-- `/api/stock-info`
-- `/api/markets/catalog`
-- `/api/markets/watch`
+---
 
-### 3.2 Nota importante su parametri market watch
-- Endpoint watchlist validato con query:
-  - `market`
-  - `index`
-- Esempio funzionante:
-  - `/api/markets/watch?market=italy&index=ftse_mib`
-- Le vecchie query con `country` e `list_id` non sono il contratto corrente.
+## Aggiornamento sessione (sera)
 
-### 3.3 Verifica backend odierna
-Eseguiti test diretti con esito positivo:
-- `GET /api/health` -> `healthy`
-- `GET /api/markets/catalog` -> OK
-- `GET /api/markets/watch?market=italy&index=ftse_mib` -> OK
-- `GET /api/symbol-search?q=stellantis` -> OK
-- `GET /api/stock-info?symbol=STLAM.MI` -> OK
+### Nuovo modulo interno "Analisi Finanziaria Personale"
+- Implementata nuova pagina frontend integrata nel layout esistente con form completo, output ranking e allocazione teorica.
+- Aggiunto backend dedicato con endpoint:
+  - `GET /api/personal-analysis/catalog`
+  - `POST /api/personal-analysis`
+- Scoring esplicito 0-100 con sottopunteggi tracciabili (quality/risk/stability/liquidity/profile/style).
+- Nessuna logica black-box o ML; formula esposta anche in output API.
+- Dati via infrastruttura esistente (`fetch_multiple_prices`) con fallback mock realistico quando necessario.
 
-## 4) Problema operativo ricorrente osservato
-- In più occasioni il backend risultava “non funzionante” lato UI per processi stale/non allineati o restart incompleto.
-- Oggi effettuato riavvio pulito e validazione porta `8011` in ascolto.
-- Avvio corretto confermato tramite script progetto `./start`.
+### Estensioni funzionali completate
+- Aggiunta ricerca strumenti (ticker) nella pagina analisi con suggerimenti da `/api/symbol-search`.
+- Supporto strumenti personalizzati in input (`custom_instruments`) con scoring coerente al profilo selezionato.
+- Sezioni dedicate a strumenti "maggiormente performanti" per classi principali.
+- Migliorata chiarezza UI con legenda breve in italiano per i campi del form.
+- Strategia rollback implementata via `VITE_ENABLE_PERSONAL_ANALYSIS=false`.
 
-## 5) Componenti/file coinvolti (sintesi)
-- Backend:
-  - `backend/app/routers/market.py`
-  - `backend/app/main.py`
-  - `backend/app/routers/search.py`
-  - `backend/app/services/data_fetcher.py`
-- Frontend:
-  - `frontend/src/components/MarketWatchPanel/MarketWatchPanel.tsx`
-  - `frontend/src/components/MarketPulsePanel/MarketPulsePanel.tsx`
-  - `frontend/src/components/RRGChart/RRGChart.tsx`
-  - `frontend/src/App.tsx`
+### Correzioni operative
+- Risolto errore 404 iniziale dovuto a backend avviato con versione non aggiornata.
+- Risolto blocco CORS per sviluppo su `http://localhost:5173` aggiungendo origine consentita in backend.
+- Verificata raggiungibilita backend su porta `8011` e corretto allineamento `VITE_API_URL`.
 
-## 6) Stato corrente a fine aggiornamento
-- Backend attivo su `8011` e rispondente.
-- Frontend attivo su `3011`.
-- Flusso watchlist e ricerca titoli confermato funzionante lato API.
-- Se in UI compare ancora errore backend, probabile cache frontend: consigliato hard refresh (`Ctrl+F5`).
+### Nota qualità dati su sezione "Azioni"
+- Verifica approfondita: la categoria equity includeva anche ETF (es. SPY/QQQ).
+- Introdotto `instrument_type` nel ranking backend e filtro UI su "azioni singole" (`instrument_type=EQUITY`) per evitare ambiguità.
 
-## 7) Comandi rapidi di controllo
-```bash
-curl -sS http://127.0.0.1:8011/api/health
-curl -sS "http://127.0.0.1:8011/api/markets/catalog"
-curl -sS "http://127.0.0.1:8011/api/markets/watch?market=italy&index=ftse_mib"
-curl -sS "http://127.0.0.1:8011/api/symbol-search?q=stellantis"
-curl -sS "http://127.0.0.1:8011/api/stock-info?symbol=STLAM.MI"
-```
-
+### Stato finale
+- Backend e frontend funzionanti in locale.
+- Build frontend e compile backend eseguite con esito positivo.

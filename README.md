@@ -140,6 +140,8 @@ salim/
 | `/api/prices` | GET | Ottieni storico prezzi (OHLCV) |
 | `/api/news` | GET | Ottieni news finanziarie |
 | `/api/insights` | POST | Genera AI insights su RRG data |
+| `/api/personal-analysis/catalog` | GET | Catalogo parametri/strumenti del modulo analisi interna |
+| `/api/personal-analysis` | POST | Modulo interno: scoring, rischio e allocazione teorica |
 | `/api/health` | GET | Health check del server |
 
 ### WebSocket
@@ -258,7 +260,21 @@ CORS_ORIGINS=["http://localhost:3001"]
 
 ```env
 VITE_API_URL=http://localhost:8000
+VITE_ENABLE_PERSONAL_ANALYSIS=true
 ```
+
+## Rollback Feature "Analisi Interna"
+
+Per disattivare rapidamente la nuova pagina senza revert di codice:
+
+```env
+VITE_ENABLE_PERSONAL_ANALYSIS=false
+```
+
+Effetto operativo:
+- nasconde la voce menu "Analisi Interna"
+- blocca la route hash `#/personal-analysis` riportando alla dashboard
+- lascia invariata la dashboard principale
 
 `VITE_API_URL` puo` anche essere lasciata vuota in produzione dietro reverse proxy (`/api` e `/api/ws` sullo stesso host del frontend).
 

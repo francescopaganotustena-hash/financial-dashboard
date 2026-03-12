@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useCallback, useEffect, useState } from 'react'
 import { Header, Sidebar } from './components/Layout'
+import type { AppView } from './components/Layout/Header'
 import { RRGChart } from './components/RRGChart'
 import { PriceChart } from './components/PriceChart'
 import { StockTrendPanel } from './components/StockTrendPanel'
@@ -10,6 +12,7 @@ import { NewsPanel } from './components/NewsPanel'
 import { AssetTable } from './components/AssetTable'
 import { SectorScreener } from './components/SectorScreener'
 import { AIInsightPanel } from './components/AIInsightPanel'
+import { PersonalAnalysisPage } from './components/PersonalAnalysisPage'
 import { useRRGData } from './hooks/useRRGData'
 
 const queryClient = new QueryClient({
@@ -22,17 +25,56 @@ const queryClient = new QueryClient({
 })
 
 function MainContent() {
-  const { data, isLoading, error } = useRRGData()
+  const personalAnalysisEnabled = import.meta.env.VITE_ENABLE_PERSONAL_ANALYSIS !== 'false'
+  const [activeView, setActiveView] = useState<AppView>(() => {
+    if (typeof window === 'undefined') return 'dashboard'
+    if (window.location.hash === '#/personal-analysis' && personalAnalysisEnabled) return 'personal-analysis'
+    return 'dashboard'
+  })
+  const { data, isLoading, error } = useRRGData({ enabled: activeView === 'dashboard' })
+
+  const handleViewChange = useCallback((view: AppView) => {
+    if (view === 'personal-analysis' && !personalAnalysisEnabled) {
+      setActiveView('dashboard')
+      return
+    }
+    setActiveView(view)
+    if (typeof window !== 'undefined') {
+      const nextHash = view === 'personal-analysis' ? '#/personal-analysis' : '#/dashboard'
+      if (window.location.hash !== nextHash) {
+        window.history.replaceState(null, '', nextHash)
+      }
+    }
+  }, [personalAnalysisEnabled])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onHashChange = () => {
+      if (window.location.hash === '#/personal-analysis' && personalAnalysisEnabled) {
+        setActiveView('personal-analysis')
+      } else {
+        setActiveView('dashboard')
+      }
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [personalAnalysisEnabled])
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar />
+      {activeView === 'dashboard' && <Sidebar />}
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        <Header
+          activeView={activeView}
+          onViewChange={handleViewChange}
+          personalAnalysisEnabled={personalAnalysisEnabled}
+        />
 
         <main className="flex-1 p-4 overflow-auto">
-          {error ? (
+          {activeView === 'personal-analysis' && personalAnalysisEnabled ? (
+            <PersonalAnalysisPage />
+          ) : error ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <p className="text-red-400 text-lg mb-2">Failed to connect to backend</p>

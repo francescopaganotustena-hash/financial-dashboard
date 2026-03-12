@@ -7,7 +7,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import rrg, prices, health, websocket, insights, search, market
+from app.routers import (
+    rrg,
+    prices,
+    health,
+    websocket,
+    insights,
+    search,
+    market,
+    personal_analysis,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -51,6 +60,7 @@ app.include_router(websocket.router)
 app.include_router(insights.router)
 app.include_router(search.router)
 app.include_router(market.router)
+app.include_router(personal_analysis.router)
 
 
 @app.get("/")

@@ -50,12 +50,18 @@ async function fetchRRGHistory(
   }))
 }
 
-export function useRRGData() {
+interface UseRRGDataOptions {
+  enabled?: boolean
+}
+
+export function useRRGData(options?: UseRRGDataOptions) {
   const { benchmark, period, selectedSymbols } = useAppStore()
+  const isEnabled = options?.enabled ?? true
 
   const query = useQuery({
     queryKey: ['rrg', benchmark, period, selectedSymbols.join(',')],
     queryFn: () => fetchRRGData(benchmark, period, selectedSymbols),
+    enabled: isEnabled,
     refetchInterval: period === 'weekly' ? 60 * 60 * 1000 : 5 * 60 * 1000,
     staleTime: period === 'weekly' ? 30 * 60 * 1000 : 2 * 60 * 1000,
   })
