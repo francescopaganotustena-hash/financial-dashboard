@@ -115,17 +115,47 @@ async def calculate_rrg_for_symbols(
         yf_period = "1y"
         yf_interval = "1d"
 
-    # Fetch benchmark data
-    benchmark_prices = await fetch_prices(benchmark, yf_period, yf_interval)
-    if benchmark_prices is None or benchmark_prices.empty:
-        raise ValueError(f"Failed to fetch benchmark data for {benchmark}")
-
-    benchmark_close = benchmark_prices['Close']
-
     # Fetch symbol data concurrently
     import asyncio
     symbol_tasks = [fetch_prices(s, yf_period, yf_interval) for s in symbols]
     symbol_results = await asyncio.gather(*symbol_tasks, return_exceptions=True)
+
+    valid_symbol_prices: Dict[str, pd.DataFrame] = {}
+    for symbol, prices in zip(symbols, symbol_results):
+        if isinstance(prices, Exception) or prices is None or prices.empty:
+            continue
+        valid_symbol_prices[symbol] = prices
+
+    # Fetch benchmark data after symbols, so we can fall back to synthetic benchmark.
+    benchmark_used = benchmark
+    benchmark_close: pd.Series | None = None
+    try:
+        benchmark_prices = await fetch_prices(benchmark, yf_period, yf_interval)
+        if benchmark_prices is not None and not benchmark_prices.empty:
+            benchmark_close = benchmark_prices["Close"]
+    except Exception as e:
+        logger.warning(f"Benchmark fetch failed for {benchmark}: {e}")
+
+    if benchmark_close is None or benchmark_close.empty:
+        # Graceful degradation: if benchmark feed is unavailable, use equal-weight
+        # close series from available assets, so API returns useful RRG instead of 503.
+        if len(valid_symbol_prices) >= 2:
+            close_frame = pd.concat(
+                [df["Close"].rename(sym) for sym, df in valid_symbol_prices.items()],
+                axis=1
+            ).dropna(how="all")
+            synthetic = close_frame.mean(axis=1, skipna=True).dropna()
+            if synthetic.empty:
+                raise ValueError(f"Failed to build synthetic benchmark for {benchmark}")
+            benchmark_close = synthetic
+            benchmark_used = "EQUAL_WEIGHT"
+            logger.warning(
+                f"Using synthetic benchmark '{benchmark_used}' because '{benchmark}' was unavailable"
+            )
+        else:
+            raise ValueError(
+                f"Failed to fetch benchmark '{benchmark}' and insufficient symbols for fallback"
+            )
 
     assets = []
     for symbol, prices in zip(symbols, symbol_results):
@@ -178,7 +208,7 @@ async def calculate_rrg_for_symbols(
             continue
 
     return {
-        "benchmark": benchmark,
+        "benchmark": benchmark_used,
         "period": period,
         "generated_at": datetime.utcnow().isoformat() + "Z",
         "assets": assets,

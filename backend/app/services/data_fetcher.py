@@ -237,7 +237,8 @@ async def fetch_prices(
                 return await fetch_prices_stooq(symbol, period, interval)
             except Exception as e3:
                 logger.error(f"Stooq also failed for {symbol}: {e3}")
-                raise DataFetchError(f"Failed to fetch data for {symbol}: {e3}")
+                detail = str(e3).strip() or repr(e3)
+                raise DataFetchError(f"Failed to fetch data for {symbol}: {detail}")
 
 
 async def fetch_multiple_prices(
