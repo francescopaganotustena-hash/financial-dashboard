@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from io import StringIO
 
 import yfinance as yf
