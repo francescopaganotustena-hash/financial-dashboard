@@ -42,6 +42,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3011",
         "http://10.0.0.103:3011",
     ])
+    cors_origin_regex: str = Field(default="")
 
 
 settings = Settings()

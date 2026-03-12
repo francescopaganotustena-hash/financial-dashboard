@@ -475,3 +475,53 @@ CORS_ORIGINS=["https://yourdomain.com","https://www.yourdomain.com"]
 ## Contact
 
 Per supporto, apri una issue sul repository GitHub.
+
+---
+
+## Quick Setup: Vercel + Render (Git Sync)
+
+Questa configurazione usa i piani gratuiti iniziali:
+- Frontend: Vercel (directory `frontend`)
+- Backend: Render (directory `backend`, file `render.yaml`)
+- Deploy automatico a ogni push su GitHub
+
+### 1) Deploy backend su Render
+
+1. Vai su Render -> `New +` -> `Blueprint`.
+2. Seleziona questo repository GitHub.
+3. Render usera automaticamente `render.yaml`.
+4. Crea il servizio `financial-dashboard-api`.
+5. In Environment aggiorna:
+   - `CORS_ORIGINS` con URL frontend reale, es:
+     - `["https://financial-dashboard.vercel.app"]`
+   - opzionale `CORS_ORIGIN_REGEX` per preview deploy:
+     - `^https://.*\\.vercel\\.app$`
+   - `NEWSAPI_KEY` (opzionale)
+   - `ALPHA_VANTAGE_KEY` (opzionale)
+6. Prendi la URL pubblica backend Render.
+
+### 2) Deploy frontend su Vercel
+
+1. Vai su Vercel -> `Add New Project`.
+2. Importa lo stesso repository GitHub.
+3. Configura:
+   - `Root Directory`: `frontend`
+   - Framework: Vite (auto)
+4. In Environment Variables aggiungi:
+   - `VITE_API_URL=https://<tuo-backend-render>.onrender.com`
+5. Deploy.
+
+### 3) Verifica
+
+```bash
+curl -sS https://<tuo-backend-render>.onrender.com/api/health
+```
+
+Controlla poi in UI:
+- Ricerca ticker (`AAPL`, `Stellantis`)
+- Tabella market watch
+- Grafico RRG e pannelli info
+
+### 4) Aggiornamenti futuri
+
+- Ogni `git push` su `main` avvia auto-deploy su Vercel e Render.
